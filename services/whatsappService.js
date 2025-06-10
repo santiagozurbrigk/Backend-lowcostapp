@@ -1,5 +1,5 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
+import { Client, LocalAuth } from 'whatsapp-web.js';
+import qrcode from 'qrcode-terminal';
 
 class WhatsAppService {
     constructor() {
@@ -72,4 +72,4 @@ class WhatsAppService {
 // Crear una instancia única del servicio
 const whatsAppService = new WhatsAppService();
 
-module.exports = whatsAppService; 
+export default whatsAppService; 

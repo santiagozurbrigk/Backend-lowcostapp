@@ -1,13 +1,13 @@
 {
   "name": "backend-imprenta",
   "version": "1.0.0",
+  "description": "Backend para sistema de imprenta",
   "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js"
   },
-  "description": "Backend para sistema de imprenta",
   "keywords": [],
   "author": "",
   "license": "ISC",
