@@ -1,5 +1,7 @@
-import { Client, LocalAuth } from 'whatsapp-web.js';
-import qrcode from 'qrcode-terminal';
+import pkg from 'whatsapp-web.js';
+const { Client, LocalAuth } = pkg;
+import qrcodePkg from 'qrcode-terminal';
+const qrcode = qrcodePkg;
 
 class WhatsAppService {
     constructor() {
