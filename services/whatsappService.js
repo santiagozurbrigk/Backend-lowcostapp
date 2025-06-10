@@ -1,7 +1,6 @@
 import pkg from 'whatsapp-web.js';
 const { Client, LocalAuth } = pkg;
-import qrcodePkg from 'qrcode-terminal';
-const qrcode = qrcodePkg;
+import QRCode from 'qrcode';
 
 class WhatsAppService {
     constructor() {
@@ -18,9 +17,17 @@ class WhatsAppService {
                 }
             });
 
-            this.client.on('qr', (qr) => {
-                console.log('Por favor, escanea el siguiente código QR:');
-                qrcode.generate(qr, { small: true });
+            this.client.on('qr', async (qr) => {
+                try {
+                    // Generar URL del código QR
+                    const url = await QRCode.toDataURL(qr);
+                    console.log('='.repeat(50));
+                    console.log('ESCANEA ESTE CÓDIGO QR EN TU WHATSAPP:');
+                    console.log(url);
+                    console.log('='.repeat(50));
+                } catch (err) {
+                    console.error('Error al generar QR:', err);
+                }
             });
 
             this.client.on('ready', () => {
