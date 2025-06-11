@@ -19,10 +19,7 @@ export const sequelize = new Sequelize(
             idle: 20000
         },
         dialectOptions: {
-            ssl: {
-                require: true,
-                rejectUnauthorized: false
-            },
+            ssl: false,
             connectTimeout: 60000
         },
         retry: {
