@@ -6,7 +6,8 @@ import {
     obtenerTodosPedidos,
     actualizarEstadoPedido,
     obtenerFacturacionDiaria,
-    obtenerPedido
+    obtenerPedido,
+    eliminarPedido
 } from '../controllers/order.controller.js';
 import authMiddleware from '../middleware/auth.middleware.js';
 import checkRole from '../middleware/checkRole.middleware.js';
@@ -44,5 +45,6 @@ router.get('/pedidos/facturacion-diaria', obtenerFacturacionDiaria);
 router.get('/pedidos/todos', checkRole('admin'), obtenerTodosPedidos);
 router.put('/pedidos/:id/estado', checkRole('admin'), actualizarEstadoPedido);
 router.get('/pedidos/:id', checkRole('admin'), obtenerPedido);
+router.delete('/pedidos/:id', checkRole('admin'), eliminarPedido);
 
 export default router;

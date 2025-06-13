@@ -244,6 +244,25 @@ const obtenerPedido = async (req, res) => {
     }
 };
 
+const eliminarPedido = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const pedido = await Pedido.findByPk(id);
+
+        if (!pedido) {
+            return res.status(404).json({ mensaje: 'Pedido no encontrado' });
+        }
+
+        await pedido.destroy();
+
+        res.json({ mensaje: 'Pedido eliminado correctamente' });
+    } catch (error) {
+        console.error('Error al eliminar el pedido:', error);
+        res.status(500).json({ mensaje: 'Error al eliminar el pedido' });
+    }
+};
+
 export {
     subirPedido,
     obtenerEstadisticas,
@@ -251,5 +270,6 @@ export {
     obtenerTodosPedidos,
     actualizarEstadoPedido,
     obtenerFacturacionDiaria,
-    obtenerPedido
+    obtenerPedido,
+    eliminarPedido
 };
