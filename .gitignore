@@ -1,10 +1,6 @@
 # Dependencies
 /node_modules
 
-# Puppeteer Chrome
-.local-chromium/
-**/node_modules/puppeteer*/.local-chromium/
-
 # Logs
 *.log
 npm-debug.log*

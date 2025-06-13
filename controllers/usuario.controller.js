@@ -251,7 +251,7 @@ const perfil = async (req, res) => {
 const obtenerUsuarios = async (req, res) => {
     try {
         const usuarios = await Usuario.findAll({
-            attributes: ['id', 'nombre', 'email', 'rol']
+            attributes: ['id', 'nombre', 'email', 'rol', 'telefono']
         });
         res.json(usuarios);
     } catch (error) {

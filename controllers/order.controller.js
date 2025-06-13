@@ -2,7 +2,6 @@ import { Pedido } from '../models/Pedido.js';
 import { Usuario } from '../models/Usuario.js';
 import { sequelize } from '../database/db.js';
 import { QueryTypes, Op } from 'sequelize';  // Agregamos Op a las importaciones
-import whatsAppService from '../services/whatsappService.js';
 
 // En la función subirPedido, elimina la parte de actualización de facturación diaria
 const subirPedido = async (req, res) => {
@@ -155,7 +154,7 @@ const actualizarEstadoPedido = async (req, res) => {
         if (estado === 'listo_para_retirar' && pedido.Usuario?.telefono) {
             try {
                 const mensaje = `✨ ¡Tu pedido está listo para retirar! Podes pasar por el local de 9:00am hasta las 18:00hs de lunes a viernes, recorda traer el numero de pedido.\n\nNúmero de pedido: #${pedido.id}`;
-                await whatsAppService.sendMessage(pedido.Usuario.telefono, mensaje);
+                
             } catch (error) {
                 console.error('Error al enviar mensaje de WhatsApp:', error);
             }

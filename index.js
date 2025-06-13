@@ -11,7 +11,6 @@ import logger from './utils/logger.js';
 import precioRoutes from './routes/precioRoutes.js';
 import pdfRoutes from './routes/pdf.routes.js';
 import authMiddleware from './middleware/auth.middleware.js';
-import whatsAppService from './services/whatsappService.js';
 
 EventEmitter.defaultMaxListeners = 15;
 dotenv.config();
@@ -60,7 +59,7 @@ const startServer = async () => {
         logger.info('Base de datos conectada correctamente');
 
         // Inicializar WhatsApp
-        await whatsAppService.initialize();
+        
         console.log('Servicio de WhatsApp inicializado correctamente');
 
         const server = app.listen(PORT, '0.0.0.0', () => {
