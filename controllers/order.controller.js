@@ -2,6 +2,7 @@ import { Pedido } from '../models/Pedido.js';
 import { Usuario } from '../models/Usuario.js';
 import { sequelize } from '../database/db.js';
 import { QueryTypes, Op } from 'sequelize';  // Agregamos Op a las importaciones
+import { sendOrderReadyEmail } from '../services/emailService.js'; // Importar el servicio de correo
 
 // En la función subirPedido, elimina la parte de actualización de facturación diaria
 const subirPedido = async (req, res) => {
@@ -150,19 +151,21 @@ const actualizarEstadoPedido = async (req, res) => {
 
         await pedido.update({ estado });
 
-        // Enviar notificación por WhatsApp solo cuando el estado sea 'listo_para_retirar'
-        if (estado === 'listo_para_retirar' && pedido.Usuario?.telefono) {
+        // Enviar notificación por correo electrónico cuando el estado sea 'listo_para_retirar'
+        let notificacionEnviada = false;
+        if (estado === 'listo_para_retirar' && pedido.Usuario?.email) {
             try {
-                const mensaje = `✨ ¡Tu pedido está listo para retirar! Podes pasar por el local de 9:00am hasta las 18:00hs de lunes a viernes, recorda traer el numero de pedido.\n\nNúmero de pedido: #${pedido.id}`;
-                
+                await sendOrderReadyEmail(pedido.Usuario.email, pedido.id, pedido);
+                notificacionEnviada = true;
             } catch (error) {
-                console.error('Error al enviar mensaje de WhatsApp:', error);
+                console.error('Error al enviar correo de notificación:', error);
+                // No enviamos el error al cliente, solo lo registramos
             }
         }
 
         res.json({ 
             mensaje: 'Estado actualizado correctamente',
-            notificacionEnviada: (estado === 'listo_para_retirar' && pedido.Usuario?.telefono) ? true : false
+            notificacionEnviada
         });
     } catch (error) {
         console.error('Error al actualizar el estado del pedido:', error);
