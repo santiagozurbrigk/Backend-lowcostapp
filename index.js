@@ -22,7 +22,9 @@ app.use(cors({
     origin: [
         'https://paleturquoise-elephant-431228.hostingersite.com',
         'http://localhost:5173',
-        'http://localhost:3000'
+        'http://localhost:3000',
+        'http://lowcostimpresiones.com',
+        'https://lowcostimpresiones.com'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
