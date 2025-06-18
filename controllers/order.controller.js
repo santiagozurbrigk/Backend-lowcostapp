@@ -93,7 +93,7 @@ const obtenerTodosPedidos = async (req, res) => {
         const pedidos = await Pedido.findAll({
             include: [{
                 model: Usuario,
-                attributes: ['id', 'nombre', 'email']
+                attributes: ['id', 'nombre', 'email', 'telefono']
             }],
             attributes: {
                 include: [
