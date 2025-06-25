@@ -35,7 +35,20 @@ router.get('/pedidos/estadisticas', obtenerEstadisticas);
 router.get('/pedidos/historial', historialPedidos);
 router.get('/uploads/:filename', (req, res) => {
     const { filename } = req.params;
-    res.download(`./uploads/${filename}`);
+    const filePath = `./uploads/${filename}`;
+    const fs = require('fs');
+    fs.access(filePath, fs.constants.F_OK, (err) => {
+        if (err) {
+            console.error(`Archivo no encontrado: ${filePath}`);
+            return res.status(404).json({ error: 'Archivo no encontrado', filePath });
+        }
+        res.download(filePath, (err) => {
+            if (err) {
+                console.error(`Error al descargar el archivo: ${err.message}`);
+                return res.status(500).json({ error: 'Error al descargar el archivo', message: err.message, filePath });
+            }
+        });
+    });
 });
 
 // Ruta para obtener la facturación diaria
