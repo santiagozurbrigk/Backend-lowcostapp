@@ -3,6 +3,8 @@ import { Usuario } from '../models/Usuario.js';
 import { sequelize } from '../database/db.js';
 import { QueryTypes, Op } from 'sequelize';  // Agregamos Op a las importaciones
 import { sendOrderReadyEmail } from '../services/emailService.js'; // Importar el servicio de correo
+import s3 from '../utils/s3.js';
+const bucketName = process.env.AWS_S3_BUCKET;
 
 // En la función subirPedido, elimina la parte de actualización de facturación diaria
 const subirPedido = async (req, res) => {
@@ -19,10 +21,23 @@ const subirPedido = async (req, res) => {
             typeof config === 'string' ? JSON.parse(config) : config
         );
 
-        // Crear un solo pedido con todos los archivos
+        // Subir archivos a S3 y obtener URLs
+        const archivosSubidos = [];
+        for (const file of req.files) {
+            const params = {
+                Bucket: bucketName,
+                Key: `${Date.now()}-${file.originalname}`,
+                Body: file.buffer,
+                ContentType: file.mimetype,
+            };
+            const data = await s3.upload(params).promise();
+            archivosSubidos.push(data.Location); // URL pública de S3
+        }
+
+        // Crear un solo pedido con todos los archivos (guardar URLs en 'archivo')
         const pedido = await Pedido.create({
             usuario_id: req.usuario.id,
-            archivo: req.files.map(file => file.filename).join(','),
+            archivo: archivosSubidos.join(','),
             tipo_impresion: configuraciones[0].tipo_impresion,
             acabado: configuraciones[0].acabado,
             copias: configuraciones.reduce((total, config) => total + parseInt(config.copias), 0),
