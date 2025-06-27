@@ -33,22 +33,26 @@ router.use(authMiddleware);
 router.post('/pedidos', limiter, upload.array('archivos', 5), subirPedido);
 router.get('/pedidos/estadisticas', obtenerEstadisticas);
 router.get('/pedidos/historial', historialPedidos);
-router.get('/uploads/:filename', (req, res) => {
-    const { filename } = req.params;
-    const filePath = `./uploads/${filename}`;
-    const fs = require('fs');
-    fs.access(filePath, fs.constants.F_OK, (err) => {
-        if (err) {
-            console.error(`Archivo no encontrado: ${filePath}`);
-            return res.status(404).json({ error: 'Archivo no encontrado', filePath });
+router.get('/uploads/:pedidoId', async (req, res) => {
+    try {
+        const { pedidoId } = req.params;
+        const pedido = await Pedido.findByPk(pedidoId);
+        if (!pedido) {
+            return res.status(404).json({ error: 'Pedido no encontrado' });
         }
-        res.download(filePath, (err) => {
-            if (err) {
-                console.error(`Error al descargar el archivo: ${err.message}`);
-                return res.status(500).json({ error: 'Error al descargar el archivo', message: err.message, filePath });
-            }
-        });
-    });
+        // El campo 'archivo' puede tener varias URLs separadas por coma
+        const archivos = pedido.archivo.split(',');
+        if (archivos.length === 1) {
+            // Si es un solo archivo, redirigir a la URL de S3
+            return res.redirect(archivos[0]);
+        } else {
+            // Si son varios archivos, devolver el array de URLs
+            return res.json({ archivos });
+        }
+    } catch (error) {
+        console.error('Error al obtener archivo(s) de S3:', error);
+        res.status(500).json({ error: 'Error al obtener archivo(s) de S3', message: error.message });
+    }
 });
 
 // Ruta para obtener la facturación diaria
