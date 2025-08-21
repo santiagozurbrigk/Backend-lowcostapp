@@ -16,7 +16,6 @@ import rateLimit from 'express-rate-limit';
 import { Op, QueryTypes } from 'sequelize';
 import { sequelize } from '../database/db.js';
 import { Pedido } from '../models/Pedido.js';
-import s3 from '../utils/s3.js';
 
 const router = express.Router();
 
@@ -56,33 +55,9 @@ router.get('/uploads/:pedidoId', async (req, res) => {
             console.log('Redirigiendo a archivo único:', archivos[0]);
             return res.redirect(archivos[0]);
         } else if (archivos.length > 1) {
-            // Si son varios archivos, generar URLs firmadas para cada uno
-            const archivosConUrlsFirmadas = [];
-            
-            for (const url of archivos) {
-                try {
-                    // Extraer la clave del archivo de la URL de S3
-                    const urlObj = new URL(url);
-                    const key = urlObj.pathname.substring(1); // Remover el slash inicial
-                    
-                    // Generar URL firmada válida por 1 hora
-                    const signedUrl = await s3.getSignedUrlPromise('getObject', {
-                        Bucket: process.env.AWS_S3_BUCKET,
-                        Key: key,
-                        Expires: 3600 // 1 hora
-                    });
-                    
-                    archivosConUrlsFirmadas.push(signedUrl);
-                    console.log('URL firmada generada para:', key);
-                } catch (error) {
-                    console.error('Error al generar URL firmada para:', url, error);
-                    // Si falla la generación de URL firmada, usar la URL original
-                    archivosConUrlsFirmadas.push(url);
-                }
-            }
-            
-            console.log('Devolviendo múltiples archivos con URLs firmadas:', archivosConUrlsFirmadas);
-            return res.json({ archivos: archivosConUrlsFirmadas });
+            // Si son varios archivos, devolver las URLs públicas directamente
+            console.log('Devolviendo múltiples archivos:', archivos);
+            return res.json({ archivos });
         } else {
             console.log('No se encontraron archivos válidos');
             return res.status(404).json({ error: 'No se encontraron archivos para este pedido' });
