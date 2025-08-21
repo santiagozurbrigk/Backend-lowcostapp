@@ -16,6 +16,7 @@ import rateLimit from 'express-rate-limit';
 import { Op, QueryTypes } from 'sequelize';
 import { sequelize } from '../database/db.js';
 import { Pedido } from '../models/Pedido.js';
+import s3 from '../utils/s3.js';
 
 const router = express.Router();
 
@@ -36,18 +37,55 @@ router.get('/pedidos/historial', historialPedidos);
 router.get('/uploads/:pedidoId', async (req, res) => {
     try {
         const { pedidoId } = req.params;
+        console.log('Solicitando archivos para pedido:', pedidoId);
+        
         const pedido = await Pedido.findByPk(pedidoId);
         if (!pedido) {
+            console.log('Pedido no encontrado:', pedidoId);
             return res.status(404).json({ error: 'Pedido no encontrado' });
         }
+        
+        console.log('Pedido encontrado, archivo:', pedido.archivo);
+        
         // El campo 'archivo' puede tener varias URLs separadas por coma
-        const archivos = pedido.archivo.split(',');
+        const archivos = pedido.archivo.split(',').map(url => url.trim()).filter(url => url.length > 0);
+        console.log('Archivos procesados:', archivos);
+        
         if (archivos.length === 1) {
             // Si es un solo archivo, redirigir a la URL de S3
+            console.log('Redirigiendo a archivo único:', archivos[0]);
             return res.redirect(archivos[0]);
+        } else if (archivos.length > 1) {
+            // Si son varios archivos, generar URLs firmadas para cada uno
+            const archivosConUrlsFirmadas = [];
+            
+            for (const url of archivos) {
+                try {
+                    // Extraer la clave del archivo de la URL de S3
+                    const urlObj = new URL(url);
+                    const key = urlObj.pathname.substring(1); // Remover el slash inicial
+                    
+                    // Generar URL firmada válida por 1 hora
+                    const signedUrl = await s3.getSignedUrlPromise('getObject', {
+                        Bucket: process.env.AWS_S3_BUCKET,
+                        Key: key,
+                        Expires: 3600 // 1 hora
+                    });
+                    
+                    archivosConUrlsFirmadas.push(signedUrl);
+                    console.log('URL firmada generada para:', key);
+                } catch (error) {
+                    console.error('Error al generar URL firmada para:', url, error);
+                    // Si falla la generación de URL firmada, usar la URL original
+                    archivosConUrlsFirmadas.push(url);
+                }
+            }
+            
+            console.log('Devolviendo múltiples archivos con URLs firmadas:', archivosConUrlsFirmadas);
+            return res.json({ archivos: archivosConUrlsFirmadas });
         } else {
-            // Si son varios archivos, devolver el array de URLs
-            return res.json({ archivos });
+            console.log('No se encontraron archivos válidos');
+            return res.status(404).json({ error: 'No se encontraron archivos para este pedido' });
         }
     } catch (error) {
         console.error('Error al obtener archivo(s) de S3:', error);
