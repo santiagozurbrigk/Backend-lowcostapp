@@ -10,6 +10,7 @@ import { EventEmitter } from 'events';
 import logger from './utils/logger.js';
 import precioRoutes from './routes/precioRoutes.js';
 import pdfRoutes from './routes/pdf.routes.js';
+import authRoutes from './routes/auth.routes.js';
 import authMiddleware from './middleware/auth.middleware.js';
 
 EventEmitter.defaultMaxListeners = 15;
@@ -36,6 +37,7 @@ app.use(cors({
 app.use(express.json());
 
 // Rutas de API
+app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api', orderRoutes);
 app.use('/api/precios', precioRoutes);
@@ -70,6 +72,8 @@ const startServer = async () => {
             
             // Imprimir las rutas disponibles
             logger.info('Rutas registradas:');
+            logger.info('- /api/auth/login');
+            logger.info('- /api/auth/registro');
             logger.info('- /api/usuarios/*');
             logger.info('- /api/pedidos/*');
             logger.info('- /api/pedidos/facturacion-diaria');
