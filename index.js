@@ -26,7 +26,8 @@ app.use(cors({
         'http://localhost:3000',
         'http://lowcostimpresiones.com',
         'https://lowcostimpresiones.com',
-        'https://frontend-pdfs.vercel.app' // Frontend en Vercel
+        'https://frontend-pdfs.vercel.app', // Frontend en Vercel (antiguo)
+        'https://lowcostimpresiones.vercel.app' // Frontend en Vercel (nuevo)
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
