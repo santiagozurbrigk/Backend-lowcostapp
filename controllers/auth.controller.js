@@ -1,19 +1,17 @@
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
-import { pool } from '../config/db.js';
+import bcrypt from 'bcryptjs';
+import { Usuario } from '../models/Usuario.js';
 
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
         
         // Verificar si el usuario existe
-        const [usuarios] = await pool.query('SELECT * FROM usuarios WHERE email = ?', [email]);
+        const usuario = await Usuario.findOne({ where: { email } });
         
-        if (usuarios.length === 0) {
+        if (!usuario) {
             return res.status(404).json({ mensaje: 'Usuario no encontrado' });
         }
-
-        const usuario = usuarios[0];
 
         // Verificar la contraseña
         const passwordCorrecto = await bcrypt.compare(password, usuario.password);
@@ -32,6 +30,8 @@ const login = async (req, res) => {
             id: usuario.id,
             nombre: usuario.nombre,
             email: usuario.email,
+            telefono: usuario.telefono,
+            rol: usuario.rol,
             token
         });
     } catch (error) {
@@ -42,12 +42,12 @@ const login = async (req, res) => {
 
 const registro = async (req, res) => {
     try {
-        const { nombre, email, password } = req.body;
+        const { nombre, email, password, telefono } = req.body;
 
         // Verificar si el usuario ya existe
-        const [existeUsuario] = await pool.query('SELECT * FROM usuarios WHERE email = ?', [email]);
+        const existeUsuario = await Usuario.findOne({ where: { email } });
         
-        if (existeUsuario.length > 0) {
+        if (existeUsuario) {
             return res.status(400).json({ mensaje: 'El usuario ya existe' });
         }
 
@@ -56,22 +56,25 @@ const registro = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         // Crear nuevo usuario
-        const [resultado] = await pool.query(
-            'INSERT INTO usuarios (nombre, email, password) VALUES (?, ?, ?)',
-            [nombre, email, hashedPassword]
-        );
+        const usuario = await Usuario.create({
+            nombre,
+            email,
+            password: hashedPassword,
+            telefono: telefono || null
+        });
 
         // Generar JWT
         const token = jwt.sign(
-            { id: resultado.insertId },
+            { id: usuario.id },
             process.env.JWT_SECRET,
             { expiresIn: '30d' }
         );
 
         res.json({
-            id: resultado.insertId,
-            nombre,
-            email,
+            id: usuario.id,
+            nombre: usuario.nombre,
+            email: usuario.email,
+            telefono: usuario.telefono,
             token
         });
     } catch (error) {
