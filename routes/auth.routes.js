@@ -1,7 +1,7 @@
 import express from 'express';
 import { login, registro, renovarToken } from '../controllers/auth.controller.js';
 import authMiddleware from '../middleware/auth.middleware.js';
-import { perfil, actualizarPerfil } from '../controllers/usuarioController.js';
+import { perfil, actualizarPerfil } from '../controllers/usuario.controller.js';
 
 const router = express.Router();
 
