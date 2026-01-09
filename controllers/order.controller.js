@@ -6,6 +6,22 @@ import { sendOrderReadyEmail } from '../services/emailService.js'; // Importar e
 import s3 from '../utils/s3.js';
 const bucketName = process.env.AWS_S3_BUCKET;
 
+// Función auxiliar para calcular el precio
+const calcularPrecio = (tipo_impresion, num_paginas, copias, acabado) => {
+    const precioPorPagina = {
+        simple_faz: 50,
+        doble_faz: 80,
+        doble_faz_2pag: 100
+    };
+
+    const precio = precioPorPagina[tipo_impresion] || 50;
+    const totalPaginas = parseInt(num_paginas) || 0;
+    const totalCopias = parseInt(copias) || 1;
+    const precioAnillado = acabado === 'anillado' ? 2500 : 0;
+
+    return (precio * totalPaginas * totalCopias) + precioAnillado;
+};
+
 // En la función subirPedido, elimina la parte de actualización de facturación diaria
 const subirPedido = async (req, res) => {
     try {
@@ -17,9 +33,46 @@ const subirPedido = async (req, res) => {
             return res.status(400).json({ mensaje: 'No se recibieron archivos' });
         }
 
-        const configuraciones = req.body.configuraciones.map(config => 
-            typeof config === 'string' ? JSON.parse(config) : config
-        );
+        let configuraciones;
+        let tipo_impresion, acabado, copias, num_paginas, precio_total;
+
+        // Manejar dos formatos: con configuraciones (array) o campos individuales
+        if (req.body.configuraciones) {
+            // Formato antiguo: viene como array de configuraciones
+            configuraciones = Array.isArray(req.body.configuraciones) 
+                ? req.body.configuraciones.map(config => 
+                    typeof config === 'string' ? JSON.parse(config) : config
+                  )
+                : [typeof req.body.configuraciones === 'string' 
+                    ? JSON.parse(req.body.configuraciones) 
+                    : req.body.configuraciones];
+
+            tipo_impresion = configuraciones[0].tipo_impresion;
+            acabado = configuraciones[0].acabado;
+            copias = configuraciones.reduce((total, config) => total + parseInt(config.copias || 0), 0);
+            num_paginas = configuraciones.reduce((total, config) => total + parseInt(config.num_paginas || 0), 0);
+        } else {
+            // Formato nuevo: campos individuales
+            tipo_impresion = req.body.tipo_impresion;
+            acabado = req.body.acabado;
+            copias = parseInt(req.body.copias) || 1;
+            num_paginas = parseInt(req.body.num_paginas) || 0;
+            
+            // Crear array de configuraciones para guardar
+            configuraciones = [{
+                tipo_impresion,
+                acabado,
+                copias,
+                num_paginas
+            }];
+        }
+
+        // Calcular precio si no viene
+        if (req.body.precio_total) {
+            precio_total = parseFloat(req.body.precio_total);
+        } else {
+            precio_total = calcularPrecio(tipo_impresion, num_paginas, copias, acabado);
+        }
 
         // Subir archivos a S3 y obtener URLs
         const archivosSubidos = [];
@@ -38,11 +91,11 @@ const subirPedido = async (req, res) => {
         const pedido = await Pedido.create({
             usuario_id: req.usuario.id,
             archivo: archivosSubidos.join(','),
-            tipo_impresion: configuraciones[0].tipo_impresion,
-            acabado: configuraciones[0].acabado,
-            copias: configuraciones.reduce((total, config) => total + parseInt(config.copias), 0),
-            num_paginas: configuraciones.reduce((total, config) => total + parseInt(config.num_paginas), 0),
-            precio_total: parseFloat(req.body.precio_total),
+            tipo_impresion,
+            acabado,
+            copias,
+            num_paginas,
+            precio_total,
             estado: 'pendiente',
             observaciones: req.body.observaciones || '',
             configuraciones_adicionales: JSON.stringify(configuraciones)
