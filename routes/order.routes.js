@@ -11,6 +11,7 @@ import {
 } from '../controllers/order.controller.js';
 import authMiddleware from '../middleware/auth.middleware.js';
 import checkRole from '../middleware/checkRole.middleware.js';
+import checkRoles from '../middleware/checkRoles.middleware.js';
 import upload from '../middleware/uploadMiddleware.js';
 import rateLimit from 'express-rate-limit';
 import { Op, QueryTypes } from 'sequelize';
@@ -71,10 +72,12 @@ router.get('/uploads/:pedidoId', async (req, res) => {
 // Ruta para obtener la facturación diaria
 router.get('/pedidos/facturacion-diaria', obtenerFacturacionDiaria);
 
-// Ruta para administradores
-router.get('/pedidos/todos', checkRole('admin'), obtenerTodosPedidos);
+// Rutas para administradores y empleados (solo lectura)
+router.get('/pedidos/todos', checkRoles('admin', 'empleado'), obtenerTodosPedidos);
+router.get('/pedidos/:id', checkRoles('admin', 'empleado'), obtenerPedido);
+
+// Rutas solo para administradores (modificación)
 router.put('/pedidos/:id/estado', checkRole('admin'), actualizarEstadoPedido);
-router.get('/pedidos/:id', checkRole('admin'), obtenerPedido);
 router.delete('/pedidos/:id', checkRole('admin'), eliminarPedido);
 
 export default router;

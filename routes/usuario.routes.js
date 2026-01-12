@@ -12,6 +12,7 @@ import {
 } from '../controllers/usuario.controller.js';
 import authMiddleware from '../middleware/auth.middleware.js';
 import checkRole from '../middleware/checkRole.middleware.js';
+import checkRoles from '../middleware/checkRoles.middleware.js';
 
 const router = express.Router();
 
@@ -27,7 +28,7 @@ router.use(authMiddleware);
 router.get('/perfil', perfil);
 router.put('/perfil', actualizarPerfil);
 
-// Ruta de administrador
-router.get('/todos', checkRole('admin'), obtenerUsuarios);
+// Ruta para administradores y empleados (solo lectura)
+router.get('/todos', checkRoles('admin', 'empleado'), obtenerUsuarios);
 
 export default router;
