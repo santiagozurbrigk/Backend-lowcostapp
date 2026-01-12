@@ -32,8 +32,8 @@ node scripts/createEmpleado.js
 
 El script crea un usuario con las siguientes credenciales:
 
-- **Email**: `empleado@lowcost.com`
-- **Password**: `empleado123`
+- **Email**: `empleadolocal@gmail.com`
+- **Password**: `localimpresioneslowcost`
 - **Rol**: `empleado`
 
 ⚠️ **IMPORTANTE**: Cambia la contraseña después del primer inicio de sesión.

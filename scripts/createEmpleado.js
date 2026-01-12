@@ -13,8 +13,8 @@ async function createEmpleado() {
 
         // Datos del empleado
         const nombre = 'Empleado';
-        const email = 'empleado@lowcost.com';
-        const password = 'empleado123'; // Cambiar esta contraseña después
+        const email = 'empleadolocal@gmail.com';
+        const password = 'localimpresioneslowcost';
         const telefono = '1123456789'; // Teléfono de ejemplo
 
         // Verificar si el usuario ya existe
