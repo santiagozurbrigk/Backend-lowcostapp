@@ -18,8 +18,9 @@ dotenv.config();
 
 const app = express();
 
-// Habilitar trust proxy para funcionar correctamente detrás de proxies reversos (Render, Vercel, etc.)
-app.set('trust proxy', true);
+// Habilitar trust proxy de manera segura: confiar solo en el primer proxy (Render)
+// Esto previene que usuarios maliciosos puedan falsificar headers X-Forwarded-For
+app.set('trust proxy', 1);
 
 // Configuración de CORS actualizada para incluir el FRONTEND_URL
 app.use(cors({
