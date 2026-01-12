@@ -19,6 +19,15 @@ const login = async (req, res) => {
             return res.status(403).json({ mensaje: 'Contraseña incorrecta' });
         }
 
+        // Debug: Verificar el rol del usuario
+        console.log('Usuario encontrado:', {
+            id: usuario.id,
+            email: usuario.email,
+            rol: usuario.rol,
+            rolType: typeof usuario.rol,
+            rolRaw: usuario.getDataValue('rol')
+        });
+
         // Generar JWT
         const token = jwt.sign(
             { id: usuario.id },
@@ -26,12 +35,16 @@ const login = async (req, res) => {
             { expiresIn: '30d' }
         );
 
+        // Asegurar que el rol siempre tenga un valor válido
+        const rolUsuario = usuario.rol || usuario.getDataValue('rol') || 'cliente';
+        console.log('Rol que se enviará al frontend:', rolUsuario);
+
         res.json({
             id: usuario.id,
             nombre: usuario.nombre,
             email: usuario.email,
             telefono: usuario.telefono,
-            rol: usuario.rol,
+            rol: rolUsuario,
             token
         });
     } catch (error) {
