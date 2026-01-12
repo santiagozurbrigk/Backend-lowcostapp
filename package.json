@@ -6,7 +6,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "create-empleado": "node scripts/createEmpleado.js",
+    "migrate:empleado": "node -e \"import('./migrations/20241201_add_empleado_role.js').then(m => m.up().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); }))\""
   },
   "keywords": [],
   "author": "",
