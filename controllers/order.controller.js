@@ -36,7 +36,8 @@ const calcularPrecio = async (tipo_impresion, num_paginas, copias, acabado) => {
     const precioPorPagina = precios[tipo_impresion] || 50;
     const totalPaginas = parseInt(num_paginas) || 0;
     const totalCopias = parseInt(copias) || 1;
-    const precioAnillado = acabado === 'anillado' ? (precios.anillado || 2500) : 0;
+    // El precio del anillado se multiplica por el número de copias
+    const precioAnillado = acabado === 'anillado' ? (precios.anillado || 2500) * totalCopias : 0;
 
     return (precioPorPagina * totalPaginas * totalCopias) + precioAnillado;
 };
