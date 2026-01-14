@@ -1,5 +1,6 @@
 import { Pedido } from '../models/Pedido.js';
 import { Usuario } from '../models/Usuario.js';
+import { Precio } from '../models/Precio.js';
 import { sequelize } from '../database/db.js';
 import { QueryTypes, Op } from 'sequelize';  // Agregamos Op a las importaciones
 import { sendOrderReadyEmail } from '../services/emailService.js'; // Importar el servicio de correo
@@ -7,20 +8,37 @@ import { PDFDocument } from 'pdf-lib';
 import s3 from '../utils/s3.js';
 const bucketName = process.env.AWS_S3_BUCKET;
 
-// Función auxiliar para calcular el precio
-const calcularPrecio = (tipo_impresion, num_paginas, copias, acabado) => {
-    const precioPorPagina = {
-        simple_faz: 50,
-        doble_faz: 80,
-        doble_faz_2pag: 100
-    };
+// Función auxiliar para obtener precios desde la base de datos
+const obtenerPrecios = async () => {
+    try {
+        const precios = await Precio.findAll();
+        const preciosMap = {};
+        precios.forEach(p => {
+            preciosMap[p.tipo] = parseFloat(p.precio);
+        });
+        return preciosMap;
+    } catch (error) {
+        console.error('Error al obtener precios, usando valores por defecto:', error);
+        // Valores por defecto en caso de error
+        return {
+            simple_faz: 50,
+            doble_faz: 80,
+            doble_faz_2pag: 100,
+            anillado: 2500
+        };
+    }
+};
 
-    const precio = precioPorPagina[tipo_impresion] || 50;
+// Función auxiliar para calcular el precio
+const calcularPrecio = async (tipo_impresion, num_paginas, copias, acabado) => {
+    const precios = await obtenerPrecios();
+    
+    const precioPorPagina = precios[tipo_impresion] || 50;
     const totalPaginas = parseInt(num_paginas) || 0;
     const totalCopias = parseInt(copias) || 1;
-    const precioAnillado = acabado === 'anillado' ? 2500 : 0;
+    const precioAnillado = acabado === 'anillado' ? (precios.anillado || 2500) : 0;
 
-    return (precio * totalPaginas * totalCopias) + precioAnillado;
+    return (precioPorPagina * totalPaginas * totalCopias) + precioAnillado;
 };
 
 // En la función subirPedido, elimina la parte de actualización de facturación diaria
@@ -105,7 +123,7 @@ const subirPedido = async (req, res) => {
         if (req.body.precio_total) {
             precio_total = parseFloat(req.body.precio_total);
         } else {
-            precio_total = calcularPrecio(tipo_impresion, num_paginas, copias, acabado);
+            precio_total = await calcularPrecio(tipo_impresion, num_paginas, copias, acabado);
         }
 
         // Subir archivos a S3 y obtener URLs
