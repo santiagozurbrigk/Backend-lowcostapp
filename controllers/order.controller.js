@@ -3,6 +3,7 @@ import { Usuario } from '../models/Usuario.js';
 import { sequelize } from '../database/db.js';
 import { QueryTypes, Op } from 'sequelize';  // Agregamos Op a las importaciones
 import { sendOrderReadyEmail } from '../services/emailService.js'; // Importar el servicio de correo
+import { PDFDocument } from 'pdf-lib';
 import s3 from '../utils/s3.js';
 const bucketName = process.env.AWS_S3_BUCKET;
 
@@ -58,6 +59,32 @@ const subirPedido = async (req, res) => {
             copias = parseInt(req.body.copias) || 1;
             num_paginas = parseInt(req.body.num_paginas) || 0;
             
+            // Si no se proporcionó num_paginas o es 0, contar automáticamente de los PDFs
+            if (num_paginas === 0 && req.files && req.files.length > 0) {
+                try {
+                    let totalPaginas = 0;
+                    for (const file of req.files) {
+                        // Solo contar páginas de archivos PDF
+                        if (file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf')) {
+                            try {
+                                const pdfDoc = await PDFDocument.load(file.buffer);
+                                totalPaginas += pdfDoc.getPageCount();
+                            } catch (pdfError) {
+                                console.warn(`No se pudo contar páginas del archivo ${file.originalname}:`, pdfError.message);
+                                // Continuar con los demás archivos
+                            }
+                        }
+                    }
+                    if (totalPaginas > 0) {
+                        num_paginas = totalPaginas;
+                        console.log(`Páginas contadas automáticamente: ${num_paginas}`);
+                    }
+                } catch (error) {
+                    console.error('Error al contar páginas automáticamente:', error);
+                    // Si falla, mantener num_paginas en 0 y el usuario deberá proporcionarlo
+                }
+            }
+            
             // Crear array de configuraciones para guardar
             configuraciones = [{
                 tipo_impresion,
@@ -65,6 +92,13 @@ const subirPedido = async (req, res) => {
                 copias,
                 num_paginas
             }];
+        }
+
+        // Validar que tenemos num_paginas antes de calcular el precio
+        if (num_paginas === 0) {
+            return res.status(400).json({ 
+                mensaje: 'No se pudo determinar el número de páginas. Por favor, asegúrate de subir archivos PDF válidos o proporciona el número de páginas manualmente.' 
+            });
         }
 
         // Calcular precio si no viene
