@@ -1,25 +1,45 @@
 import { Pedido } from '../models/Pedido.js';
 import { Usuario } from '../models/Usuario.js';
+import { Precio } from '../models/Precio.js';
 import { sequelize } from '../database/db.js';
 import { QueryTypes, Op } from 'sequelize';  // Agregamos Op a las importaciones
 import { sendOrderReadyEmail } from '../services/emailService.js'; // Importar el servicio de correo
+import { PDFDocument } from 'pdf-lib';
 import s3 from '../utils/s3.js';
 const bucketName = process.env.AWS_S3_BUCKET;
 
-// Función auxiliar para calcular el precio
-const calcularPrecio = (tipo_impresion, num_paginas, copias, acabado) => {
-    const precioPorPagina = {
-        simple_faz: 50,
-        doble_faz: 80,
-        doble_faz_2pag: 100
-    };
+// Función auxiliar para obtener precios desde la base de datos
+const obtenerPrecios = async () => {
+    try {
+        const precios = await Precio.findAll();
+        const preciosMap = {};
+        precios.forEach(p => {
+            preciosMap[p.tipo] = parseFloat(p.precio);
+        });
+        return preciosMap;
+    } catch (error) {
+        console.error('Error al obtener precios, usando valores por defecto:', error);
+        // Valores por defecto en caso de error
+        return {
+            simple_faz: 50,
+            doble_faz: 80,
+            doble_faz_2pag: 100,
+            anillado: 2500
+        };
+    }
+};
 
-    const precio = precioPorPagina[tipo_impresion] || 50;
+// Función auxiliar para calcular el precio
+const calcularPrecio = async (tipo_impresion, num_paginas, copias, acabado) => {
+    const precios = await obtenerPrecios();
+    
+    const precioPorPagina = precios[tipo_impresion] || 50;
     const totalPaginas = parseInt(num_paginas) || 0;
     const totalCopias = parseInt(copias) || 1;
-    const precioAnillado = acabado === 'anillado' ? 2500 : 0;
+    // El precio del anillado se multiplica por el número de copias
+    const precioAnillado = acabado === 'anillado' ? (precios.anillado || 2500) * totalCopias : 0;
 
-    return (precio * totalPaginas * totalCopias) + precioAnillado;
+    return (precioPorPagina * totalPaginas * totalCopias) + precioAnillado;
 };
 
 // En la función subirPedido, elimina la parte de actualización de facturación diaria
@@ -58,6 +78,32 @@ const subirPedido = async (req, res) => {
             copias = parseInt(req.body.copias) || 1;
             num_paginas = parseInt(req.body.num_paginas) || 0;
             
+            // Si no se proporcionó num_paginas o es 0, contar automáticamente de los PDFs
+            if (num_paginas === 0 && req.files && req.files.length > 0) {
+                try {
+                    let totalPaginas = 0;
+                    for (const file of req.files) {
+                        // Solo contar páginas de archivos PDF
+                        if (file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf')) {
+                            try {
+                                const pdfDoc = await PDFDocument.load(file.buffer);
+                                totalPaginas += pdfDoc.getPageCount();
+                            } catch (pdfError) {
+                                console.warn(`No se pudo contar páginas del archivo ${file.originalname}:`, pdfError.message);
+                                // Continuar con los demás archivos
+                            }
+                        }
+                    }
+                    if (totalPaginas > 0) {
+                        num_paginas = totalPaginas;
+                        console.log(`Páginas contadas automáticamente: ${num_paginas}`);
+                    }
+                } catch (error) {
+                    console.error('Error al contar páginas automáticamente:', error);
+                    // Si falla, mantener num_paginas en 0 y el usuario deberá proporcionarlo
+                }
+            }
+            
             // Crear array de configuraciones para guardar
             configuraciones = [{
                 tipo_impresion,
@@ -67,11 +113,18 @@ const subirPedido = async (req, res) => {
             }];
         }
 
+        // Validar que tenemos num_paginas antes de calcular el precio
+        if (num_paginas === 0) {
+            return res.status(400).json({ 
+                mensaje: 'No se pudo determinar el número de páginas. Por favor, asegúrate de subir archivos PDF válidos o proporciona el número de páginas manualmente.' 
+            });
+        }
+
         // Calcular precio si no viene
         if (req.body.precio_total) {
             precio_total = parseFloat(req.body.precio_total);
         } else {
-            precio_total = calcularPrecio(tipo_impresion, num_paginas, copias, acabado);
+            precio_total = await calcularPrecio(tipo_impresion, num_paginas, copias, acabado);
         }
 
         // Subir archivos a S3 y obtener URLs

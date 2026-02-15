@@ -40,7 +40,7 @@ export const Usuario = sequelize.define('Usuario', {
         defaultValue: true
     },
     rol: {
-        type: DataTypes.ENUM('cliente', 'admin'),
+        type: DataTypes.ENUM('cliente', 'admin', 'empleado'),
         defaultValue: 'cliente'
     }
 }, {
