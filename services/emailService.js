@@ -40,7 +40,7 @@ const sendOrderReadyEmail = async (email, orderId, pedido) => {
 
                     <div style="background-color: #e5e7eb; padding: 15px; border-radius: 5px; margin: 20px 0;">
                         <h3 style="color: #1a56db; margin-top: 0;">Información de retiro:</h3>
-                        <p style="margin: 5px 0;"><strong>Dirección:</strong> Avellaneda 3454</p>
+                        <p style="margin: 5px 0;"><strong>Dirección:</strong> Alvarado 3564</p>
                         <p style="margin: 5px 0;"><strong>Horario de atención:</strong> Lunes a Viernes de 9:00 a 17:00</p>
                     </div>
 
