@@ -30,14 +30,14 @@ const obtenerPrecios = async () => {
 };
 
 // Función auxiliar para calcular el precio
-const calcularPrecio = async (tipo_impresion, num_paginas, copias, acabado) => {
+const calcularPrecio = async (tipo_impresion, num_paginas, copias, acabado, cantidadArchivos = 1) => {
     const precios = await obtenerPrecios();
     
     const precioPorPagina = precios[tipo_impresion] || 50;
     const totalPaginas = parseInt(num_paginas) || 0;
     const totalCopias = parseInt(copias) || 1;
-    // El precio del anillado se multiplica por el número de copias
-    const precioAnillado = acabado === 'anillado' ? (precios.anillado || 2500) * totalCopias : 0;
+    // El precio del anillado se multiplica por el número de archivos (cada archivo necesita su propio anillado)
+    const precioAnillado = acabado === 'anillado' ? (precios.anillado || 2500) * cantidadArchivos : 0;
 
     return (precioPorPagina * totalPaginas * totalCopias) + precioAnillado;
 };
@@ -124,7 +124,8 @@ const subirPedido = async (req, res) => {
         if (req.body.precio_total) {
             precio_total = parseFloat(req.body.precio_total);
         } else {
-            precio_total = await calcularPrecio(tipo_impresion, num_paginas, copias, acabado);
+            const cantidadArchivos = req.files ? req.files.length : 1;
+            precio_total = await calcularPrecio(tipo_impresion, num_paginas, copias, acabado, cantidadArchivos);
         }
 
         // Subir archivos a S3 y obtener URLs
