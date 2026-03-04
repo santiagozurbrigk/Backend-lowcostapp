@@ -89,7 +89,6 @@ const handleConnection = async () => {
             ssl: process.env.DB_SSL === 'true'
         });
         
-        
         // Intentar reconectar solo si no se ha excedido el límite de intentos
         if (intentosReconexion < MAX_INTENTOS_RECONEXION) {
             console.log(`Reintentando conexión en ${INTERVALO_RECONEXION / 1000} segundos...`);
